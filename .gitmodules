@@ -1,0 +1,3 @@
+[submodule "lib/GPIO_lib"]
+	path = lib/GPIO_lib
+	url = https://github.com/MatthijsV0s/GPIO_lib
