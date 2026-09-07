@@ -1,3 +1,6 @@
 [submodule "lib/GPIO_lib"]
 	path = lib/GPIO_lib
 	url = https://github.com/MatthijsV0s/GPIO_lib
+[submodule "lib/USART_lib"]
+	path = lib/USART_lib
+	url = https://github.com/MatthijsV0s/USART_lib
