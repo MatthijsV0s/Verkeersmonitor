@@ -2,7 +2,8 @@
 #include "usart.h"
 #include "errors.h"
 
-#define OUTPUT_MASK 0xF0
+#define OUTPUT_COUNTER_LEDS         (BIT0 | BIT1 | BIT2 | BIT3)
+#define OUTPUT_COUNTER_LEDS_MASK    (0xFF & ~OUTPUT_COUNTER_LEDS)
 
 void buttonPushISR(void);
 int32_t showBinairy(uint8_t value);
@@ -13,7 +14,7 @@ int main(void) {
     int32_t error = SYSTEM_OK;
 
     USART_Init();
-    if (gpioPinSetDirection(PB, BIT0 | BIT1 | BIT2 | BIT3, OUTPUT) != SYSTEM_OK) {
+    if (gpioPinSetDirection(PB, OUTPUT_COUNTER_LEDS, OUTPUT) != SYSTEM_OK) {
         error = ERROR;
     }
     else if (gpioExternalInterruptEnable(PD, BIT2, FALLING_EDGE, &buttonPushISR) != SYSTEM_OK) {
@@ -38,7 +39,7 @@ int32_t showBinairy(uint8_t value) {
     int32_t error = SYSTEM_OK;
     uint8_t copyOutput = 0u;
 
-    copyOutput = PORTB & OUTPUT_MASK;
+    copyOutput = PORTB & OUTPUT_COUNTER_LEDS_MASK;
     PORTB = copyOutput | value;
 
     return error;
