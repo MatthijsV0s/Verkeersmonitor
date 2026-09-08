@@ -2,43 +2,44 @@
 #include "usart.h"
 #include "errors.h"
 
-void buttonPD2ISR(void);
+#define OUTPUT_MASK 0xF0
+
+void buttonPushISR(void);
+int32_t showBinairy(uint8_t value);
+
+uint8_t teller = 0u;
 
 int main(void) {
     int32_t error = SYSTEM_OK;
 
     USART_Init();
-    USART_Transmit('B');
-    if (gpioPinSetDirection(PB, BIT0, OUTPUT) != SYSTEM_OK) {
+    if (gpioPinSetDirection(PB, BIT0 | BIT1 | BIT2 | BIT3, OUTPUT) != SYSTEM_OK) {
         error = ERROR;
-        USART_Transmit('1');
     }
-    // else if (gpioExternalInterruptEnable(PD, BIT2, FALLING_EDGE, &buttonPD2ISR) != SYSTEM_OK) {
-    //     error = ERROR;
-    //     USART_Transmit('2');
-    // }
-    else if (gpioPinSetDirection(PB, BIT1, INPUT) != SYSTEM_OK) {
+    else if (gpioExternalInterruptEnable(PD, BIT2, FALLING_EDGE, &buttonPushISR) != SYSTEM_OK) {
         error = ERROR;
-        USART_Transmit('I');
-    }
-    else if (gpioPinChangeInterruptEnable(PB, BIT1, FALLING_EDGE, &buttonPD2ISR) != SYSTEM_OK) {
-        error = ERROR;
-        USART_Transmit('2');
     }
     else if (globalInterruptEnable() != SYSTEM_OK) {
         error = ERROR;
-        USART_Transmit('3');
     }
     else {
         while (1) {
-
+            (void)showBinairy((teller / 2) % 16);
         }
     }
-    USART_Transmit('e');
     return error;
 }
 
-void buttonPD2ISR(void) {
-    (void)gpioPinToggle(PB, BIT0);            // Toggle LED
-    USART_Transmit('x');
+void buttonPushISR(void) {
+    teller++;
+}
+
+int32_t showBinairy(uint8_t value) {
+    int32_t error = SYSTEM_OK;
+    uint8_t copyOutput = 0u;
+
+    copyOutput = PORTB & OUTPUT_MASK;
+    PORTB = copyOutput | value;
+
+    return error;
 }
