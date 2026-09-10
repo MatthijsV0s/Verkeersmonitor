@@ -6,9 +6,11 @@
 #define OUTPUT_COUNTER_LEDS_REGISTER    (PC)
 #define OUTPUT_COUNTER_LEDS_BITS        (BIT0 | BIT1 | BIT2 | BIT3)
 #define OUTPUT_COUNTER_LEDS_MASK        (0xFF & ~OUTPUT_COUNTER_LEDS_BITS)
+#define OUTPUT_COUNTER_LEDS_FIRST_BIT   (BIT0)
 #define OUTPUT_SPEED_LEDS_REGISTER      (PD)
 #define OUTPUT_SPEED_LEDS_BITS          (BIT0 | BIT1 | BIT2 | BIT3)
 #define OUTPUT_SPEED_LEDS_MASK          (0xFF & ~OUTPUT_SPEED_LEDS_BITS)
+#define OUTPUT_SPEED_LEDS_FIRST_BIT     (BIT0)
 #define OUTPUT_DIGITS_LEDS_REGISTER     (PD)
 #define OUTPUT_DIGITS_LEDS_BITS         (BIT4 | BIT5 | BIT6 | BIT7)
 #define OUTPUT_DIGITS_LEDS_MASK         (0xFF & ~OUTPUT_DIGITS_LEDS_BITS)
@@ -17,9 +19,10 @@
 #define INPUT_BUTTON_1_BIT              (BIT0)
 
 void buttonPushISR(void);
-int32_t showBinairy(uint8_t value, uint8_t port, uint8_t mask);
+int32_t showBinairy(uint8_t value, uint8_t port, uint8_t firstBit, uint8_t mask);
 void saveSpeed(float speedMS);
-void showSpeed(void);
+void showSpeed(uint8_t numberPort, uint8_t digitPort, uint8_t numberFirstBit, uint8_t digitFirstBit, uint8_t numberMask, uint8_t digitBits);
+uint8_t bitIndex(uint8_t value);
 
 uint8_t teller = 0u;
 uint8_t speedSegmentBuffer[4] = {0u};
@@ -51,8 +54,8 @@ int main(void) {
     else {
         saveSpeed(123.4);
         while (1) {
-            (void)showBinairy((teller / 2) % 16, OUTPUT_COUNTER_LEDS_REGISTER, OUTPUT_COUNTER_LEDS_MASK);
-            showSpeed();
+            (void)showBinairy((teller / 2) % 16, OUTPUT_COUNTER_LEDS_REGISTER, OUTPUT_COUNTER_LEDS_FIRST_BIT, OUTPUT_COUNTER_LEDS_MASK);
+            showSpeed(OUTPUT_SPEED_LEDS_REGISTER, OUTPUT_DIGITS_LEDS_REGISTER, OUTPUT_SPEED_LEDS_FIRST_BIT, OUTPUT_DIGITS_LEDS_FIRST_BIT, OUTPUT_SPEED_LEDS_MASK, OUTPUT_DIGITS_LEDS_BITS);
             _delay_ms(2);
         }
     }
@@ -63,10 +66,11 @@ void buttonPushISR(void) {
     teller++;
 }
 
-int32_t showBinairy(uint8_t value, uint8_t port, uint8_t mask) {
+int32_t showBinairy(uint8_t value, uint8_t port, uint8_t firstBit, uint8_t mask) {
     int32_t error = SYSTEM_OK;
     uint8_t copyOutput = 0u;
 
+    value = (value << bitIndex(firstBit));
     port *= 3u;
     copyOutput = (*(&PORTB + port)) & mask;
     (*(&PORTB + port)) = copyOutput | value;
@@ -84,12 +88,20 @@ void saveSpeed(float speedMS) {
     speedSegmentBuffer[3] = (number / 1000) % 10;
 }
 
-void showSpeed(void) {
+void showSpeed(uint8_t numberPort, uint8_t digitPort, uint8_t numberFirstBit, uint8_t digitFirstBit, uint8_t numberMask, uint8_t digitBits) {
     static uint8_t digit = 0u;
 
-    gpioPinSetValue(OUTPUT_DIGITS_LEDS_REGISTER, OUTPUT_DIGITS_LEDS_BITS, HIGH); // Set high (off) because of Common Cathode
-    showBinairy(speedSegmentBuffer[digit], OUTPUT_SPEED_LEDS_REGISTER, OUTPUT_SPEED_LEDS_MASK);
-    gpioPinSetValue(OUTPUT_DIGITS_LEDS_REGISTER, (OUTPUT_DIGITS_LEDS_FIRST_BIT << digit), LOW);
+    gpioPinSetValue(digitPort, digitBits, HIGH); // Set high (off) because of Common Cathode
+    showBinairy(speedSegmentBuffer[digit], numberPort, numberFirstBit, numberMask);
+    gpioPinSetValue(digitPort, (digitFirstBit << digit), LOW);
 
     digit = (digit + 1) & 0x03;
+}
+
+uint8_t bitIndex(uint8_t value) {
+    uint8_t index = 0;
+    while (value >>= 1) {
+        index++;
+    }
+    return index;
 }
