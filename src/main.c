@@ -17,6 +17,8 @@
 #define OUTPUT_DIGITS_LEDS_FIRST_BIT    (BIT4)
 #define INPUT_BUTTON_1_REGISTER         (PB)
 #define INPUT_BUTTON_1_BIT              (BIT0)
+#define OUTPUT_DP_LED_PORT              (PB)
+#define OUTPUT_DP_LED_BIT               (BIT3)
 
 void buttonPushISR(void);
 int32_t showBinairy(uint8_t value, uint8_t port, uint8_t firstBit, uint8_t mask);
@@ -40,6 +42,9 @@ int main(void) {
         error = ERROR;
     }
     else if (gpioPinSetDirection(INPUT_BUTTON_1_REGISTER, INPUT_BUTTON_1_BIT, INPUT) != SYSTEM_OK) {
+        error = ERROR;
+    }
+    else if (gpioPinSetDirection(OUTPUT_DP_LED_PORT, OUTPUT_DP_LED_BIT, OUTPUT) != SYSTEM_OK) {
         error = ERROR;
     }
     else if (gpioPinSetPullUp(INPUT_BUTTON_1_REGISTER, INPUT_BUTTON_1_BIT, NOPULLUP) != SYSTEM_OK) {
@@ -104,6 +109,12 @@ int32_t showSpeed(uint8_t numberPort, uint8_t digitPort, uint8_t numberFirstBit,
         error = ERROR;
     }
     else {
+        if (digit == 1) {
+            (void)gpioPinSetValue(OUTPUT_DP_LED_PORT, OUTPUT_DP_LED_BIT, HIGH);
+        }
+        else {
+            (void)gpioPinSetValue(OUTPUT_DP_LED_PORT, OUTPUT_DP_LED_BIT, LOW);
+        }
         digit = (digit + 1) & 0x03;
     }
     return error;
