@@ -4,15 +4,17 @@
 #include <util/delay.h>
 
 #define OUTPUT_COUNTER_LEDS_REGISTER    (PC)
-#define OUTPUT_COUNTER_LEDS             (BIT0 | BIT1 | BIT2 | BIT3)
-#define OUTPUT_COUNTER_LEDS_MASK        (0xFF & ~OUTPUT_COUNTER_LEDS)
+#define OUTPUT_COUNTER_LEDS_BITS        (BIT0 | BIT1 | BIT2 | BIT3)
+#define OUTPUT_COUNTER_LEDS_MASK        (0xFF & ~OUTPUT_COUNTER_LEDS_BITS)
 #define OUTPUT_SPEED_LEDS_REGISTER      (PD)
-#define OUTPUT_SPEED_LEDS               (BIT0 | BIT1 | BIT2 | BIT3)
-#define OUTPUT_SPEED_LEDS_MASK          (0xFF & ~OUTPUT_SPEED_LEDS)
+#define OUTPUT_SPEED_LEDS_BITS          (BIT0 | BIT1 | BIT2 | BIT3)
+#define OUTPUT_SPEED_LEDS_MASK          (0xFF & ~OUTPUT_SPEED_LEDS_BITS)
 #define OUTPUT_DIGITS_LEDS_REGISTER     (PD)
-#define OUTPUT_DIGITS_LEDS              (BIT4 | BIT5 | BIT6 | BIT7)
-#define OUTPUT_DIGITS_LEDS_MASK         (0xFF & ~OUTPUT_DIGITS_LEDS)
+#define OUTPUT_DIGITS_LEDS_BITS         (BIT4 | BIT5 | BIT6 | BIT7)
+#define OUTPUT_DIGITS_LEDS_MASK         (0xFF & ~OUTPUT_DIGITS_LEDS_BITS)
 #define OUTPUT_DIGITS_LEDS_FIRST_BIT    (BIT4)
+#define INPUT_BUTTON_1_REGISTER         (PB)
+#define INPUT_BUTTON_1_BIT              (BIT0)
 
 void buttonPushISR(void);
 int32_t showBinairy(uint8_t value, uint8_t port, uint8_t mask);
@@ -25,22 +27,22 @@ uint8_t speedSegmentBuffer[4] = {0u};
 int main(void) {
     int32_t error = SYSTEM_OK;
 
-    if (gpioPinSetDirection(OUTPUT_COUNTER_LEDS_REGISTER, OUTPUT_COUNTER_LEDS, OUTPUT) != SYSTEM_OK) {
+    if (gpioPinSetDirection(OUTPUT_COUNTER_LEDS_REGISTER, OUTPUT_COUNTER_LEDS_BITS, OUTPUT) != SYSTEM_OK) {
         error = ERROR;
     }
-    else if (gpioPinSetDirection(OUTPUT_SPEED_LEDS_REGISTER, OUTPUT_SPEED_LEDS, OUTPUT) != SYSTEM_OK) {
+    else if (gpioPinSetDirection(OUTPUT_SPEED_LEDS_REGISTER, OUTPUT_SPEED_LEDS_BITS, OUTPUT) != SYSTEM_OK) {
         error = ERROR;
     }
-    else if (gpioPinSetDirection(OUTPUT_DIGITS_LEDS_REGISTER, OUTPUT_DIGITS_LEDS, OUTPUT) != SYSTEM_OK) {
+    else if (gpioPinSetDirection(OUTPUT_DIGITS_LEDS_REGISTER, OUTPUT_DIGITS_LEDS_BITS, OUTPUT) != SYSTEM_OK) {
         error = ERROR;
     }
-    else if (gpioPinSetDirection(PB, BIT0, INPUT) != SYSTEM_OK) {
+    else if (gpioPinSetDirection(INPUT_BUTTON_1_REGISTER, INPUT_BUTTON_1_BIT, INPUT) != SYSTEM_OK) {
         error = ERROR;
     }
-    else if (gpioPinSetPullUp(PB, BIT0, NOPULLUP) != SYSTEM_OK) {
+    else if (gpioPinSetPullUp(INPUT_BUTTON_1_REGISTER, INPUT_BUTTON_1_BIT, NOPULLUP) != SYSTEM_OK) {
         error = ERROR;
     }
-    else if (gpioPinChangeInterruptEnable(PB, BIT0, FALLING_EDGE, &buttonPushISR) != SYSTEM_OK) {
+    else if (gpioPinChangeInterruptEnable(INPUT_BUTTON_1_REGISTER, INPUT_BUTTON_1_BIT, FALLING_EDGE, &buttonPushISR) != SYSTEM_OK) {
         error = ERROR;
     }
     else if (globalInterruptEnable() != SYSTEM_OK) {
@@ -85,7 +87,7 @@ void saveSpeed(float speedMS) {
 void showSpeed(void) {
     static uint8_t digit = 0u;
 
-    gpioPinSetValue(OUTPUT_DIGITS_LEDS_REGISTER, OUTPUT_DIGITS_LEDS, HIGH); // Set high (off) because of Common Cathode
+    gpioPinSetValue(OUTPUT_DIGITS_LEDS_REGISTER, OUTPUT_DIGITS_LEDS_BITS, HIGH); // Set high (off) because of Common Cathode
     showBinairy(speedSegmentBuffer[digit], OUTPUT_SPEED_LEDS_REGISTER, OUTPUT_SPEED_LEDS_MASK);
     gpioPinSetValue(OUTPUT_DIGITS_LEDS_REGISTER, (OUTPUT_DIGITS_LEDS_FIRST_BIT << digit), LOW);
 
