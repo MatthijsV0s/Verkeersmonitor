@@ -18,6 +18,9 @@ typedef double float64_t;
 #define OUTPUT_DP_LED_PORT              (PB)
 #define OUTPUT_DP_LED_BIT               (BIT3)
 
+#define CLEAR_DISPLAY                   (0xFFFF)
+#define EMPTY_SEGMENT                   (0xFF)
+
 int32_t carSpeedInit(void);
 int32_t carSpeedSaveSpeed(float32_t speed);
 int32_t carSpeedShowSpeed(uint8_t numberPort, uint8_t digitPort, uint8_t numberFirstBit, uint8_t digitFirstBit, uint8_t numberMask, uint8_t digitBits);

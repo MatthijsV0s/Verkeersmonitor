@@ -74,7 +74,6 @@ int main(void) {
         error = ERROR;
     }
     else {
-        (void)carSpeedSaveSpeed(0.0f);
         while (1) {
             if (vehicle_passed(SENSOR_COUNTER)) {
                 carCounter++;

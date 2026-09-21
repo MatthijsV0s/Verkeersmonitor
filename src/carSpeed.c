@@ -26,12 +26,21 @@ int32_t carSpeedInit(void) {
 int32_t carSpeedSaveSpeed(float32_t speed) {
     int32_t error = SYSTEM_OK;
     uint16_t number = 0u;
-    number = (uint16_t)(speedMS * 10.0);
 
-    speedSegmentBuffer[0] = (number)        % 10;
-    speedSegmentBuffer[1] = (number / 10)   % 10;
-    speedSegmentBuffer[2] = (number / 100)  % 10;
-    speedSegmentBuffer[3] = (number / 1000) % 10;
+    if (speed == CLEAR_DISPLAY) {
+        speedSegmentBuffer[0] = EMPTY_SEGMENT;
+        speedSegmentBuffer[1] = EMPTY_SEGMENT;
+        speedSegmentBuffer[2] = EMPTY_SEGMENT;
+        speedSegmentBuffer[3] = EMPTY_SEGMENT;
+    }
+    else {
+        number = (uint16_t)(speed * 10.0f);
+
+        speedSegmentBuffer[0] = (number)         % 10u;
+        speedSegmentBuffer[1] = (number / 10u)   % 10u;
+        speedSegmentBuffer[2] = (number / 100u)  % 10u;
+        speedSegmentBuffer[3] = (number / 1000u) % 10u;
+    }
     return error;
 }
 
