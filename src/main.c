@@ -6,8 +6,8 @@
 #include "carCount.h"
 #include "displayBinairy.h"
 
-#define INPUT_BUTTON_1_REGISTER         (PB)
-#define INPUT_BUTTON_1_BIT              (BIT0)
+#define INPUT_BUTTON_1_REGISTER         (PC)
+#define INPUT_BUTTON_1_BIT              (BIT4)
 #define INPUT_BUTTON_2_REGISTER         (PC)
 #define INPUT_BUTTON_2_BIT              (BIT5)
 
@@ -157,7 +157,7 @@ void determine_and_show_speed(void) {
  */
 void buttonPushCounterISR(void) {
     uint32_t    nowTimeTellerISR = millis();
-    bool        isButtonLow = ((PINB & INPUT_BUTTON_1_BIT) == 0u); /* Make this less hardcoded */
+    bool        isButtonLow = ((PINC & INPUT_BUTTON_1_BIT) == 0u); /* Make this less hardcoded */
 
     if (isButtonLow) {
         if (!isButton1Down && ((nowTimeTellerISR - lastTimeTeller1ISR) >= DEBOUNCE_TIME_MS)) {
