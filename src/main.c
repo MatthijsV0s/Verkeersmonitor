@@ -9,13 +9,16 @@
 #define INPUT_BUTTON_1_REGISTER         (PB)
 #define INPUT_BUTTON_1_BIT              (BIT0)
 
-#define DEBOUNCE_TIME_MS                (100u)
+#define DEBOUNCE_TIME_MS                (10u)
 
 void buttonPushISR(void);
 
-volatile uint8_t teller = 0u;
-volatile uint32_t lastTimeTellerISR = 0u;
-volatile bool buttonIsDown = false;
+volatile uint8_t    teller                      = 0u;
+volatile uint32_t   lastTimeTellerISR           = 0u;
+volatile bool       isButtonDown                = false;
+volatile bool       isFirstButtonPressedFlag    = false;
+volatile bool       isSecondButtonPressedFlag   = false;
+bool                isFirstCallFunction         = true;
 
 int main(void) {
     int32_t error = SYSTEM_OK;
@@ -52,22 +55,24 @@ int main(void) {
     return error;
 }
 
-/**
- * Check for the button to be have a complete press (High - Low - High)
+/** 
+ * Check if the button wan't already reported pressed, and if time between presses is more than DEBOUCE_TIME_MS.
+ * Also depend on a button release, before marking a new press.
  */
 void buttonPushISR(void) {
     uint32_t nowTimeTellerISR = millis();
-    bool buttonIsLow = ((PINB & INPUT_BUTTON_1_BIT) == 0u);
+    bool isButtonLow = ((PINB & INPUT_BUTTON_1_BIT) == 0u);
 
-    if (buttonIsLow) {
-        if (!buttonIsDown && ((nowTimeTellerISR - lastTimeTellerISR) >= DEBOUNCE_TIME_MS)) {
+    if (isButtonLow) {
+        if (!isButtonDown && ((nowTimeTellerISR - lastTimeTellerISR) >= DEBOUNCE_TIME_MS)) {
             lastTimeTellerISR = nowTimeTellerISR;
-            buttonIsDown = true;
-            teller++;
+            isButtonDown = true;
+            isFirstButtonPressedFlag = true;
         }
     }
-    else if (buttonIsDown) {
-        lastTimeTellerISR = nowTimeTellerISR;
-        buttonIsDown = false;
+    else if (isButtonDown) {
+        isButtonDown = false;
+    }
+}
     }
 }
