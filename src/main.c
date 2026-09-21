@@ -8,24 +8,39 @@
 
 #define INPUT_BUTTON_1_REGISTER         (PB)
 #define INPUT_BUTTON_1_BIT              (BIT0)
+#define INPUT_BUTTON_2_REGISTER         (PC)
+#define INPUT_BUTTON_2_BIT              (BIT5)
 
 #define DEBOUNCE_TIME_MS                (10u)
 
 #define CAR_COUNTER_OVERFLOW            (16u)
 #define MAX_TIME_BETWEEN_AXLES_MS       (1000u)
+#define SPEED_MEASURE_TIMEOUT_MS        (10811u) /* 10.811 seconds at a 0.6 meter distance = 0.2 km/h */
+#define DEFAULT_DISTANCE_M              (0.6f)
+#define SENSOR_COUNTER                  (0u)
+#define SENSOR_SPEED                    (1u)
+#define NUMBER_OF_SENSORS               (2u)
+#define CONVERTION_TO_KMH               (3600.0f)
+#define CONFERTION_TO_MS                (1000.0f)
 
-void buttonPushISR(void);
-bool vehicle_passed(void);
-bool axle_detected(void);
+void buttonPushCounterISR(void);
+void buttonPushSpeedISR(void);
+bool vehicle_passed(uint8_t sensor);
+bool axle_detected(uint8_t sensor);
 void display_counter(uint8_t value);
+void determine_and_show_speed();
 
-volatile uint8_t    carCounter                  = 0u;
-volatile uint32_t   lastTimeTellerISR           = 0u;
-volatile bool       isButtonDown                = false;
-volatile bool       isFirstButtonPressedFlag    = false;
-volatile bool       isSecondButtonPressedFlag   = false;
-bool                isFirstCallFunction         = true;
-volatile uint32_t   timeAxlePast                = 0u;
+volatile uint8_t    carCounter                              = 0u;
+volatile uint32_t   lastTimeTeller1ISR                      = 0u;
+volatile uint32_t   lastTimeTeller2ISR                      = 0u;
+volatile bool       isButton1Down                           = false;
+volatile bool       isButton2Down                           = false;
+volatile bool       isFirstButtonPressedFlag                = false;
+volatile bool       isSecondButtonPressedFlag               = false;
+bool                isFirstCallFunction[NUMBER_OF_SENSORS]  = {true, true};
+volatile uint32_t   timeAxlePast[NUMBER_OF_SENSORS]         = {0u};
+volatile uint32_t   timeStartMeasureSpeed                   = 0u;
+bool                isCounterIncreased                      = false;
 
 int main(void) {
     int32_t error = SYSTEM_OK;
@@ -38,10 +53,22 @@ int main(void) {
     else if (gpioPinSetPullUp(INPUT_BUTTON_1_REGISTER, INPUT_BUTTON_1_BIT, PULLUP) != SYSTEM_OK) {
         error = ERROR;
     }
-    else if (gpioPinChangeInterruptEnable(INPUT_BUTTON_1_REGISTER, INPUT_BUTTON_1_BIT, FALLING_EDGE, &buttonPushISR) != SYSTEM_OK) {
+    else if (gpioPinChangeInterruptEnable(INPUT_BUTTON_1_REGISTER, INPUT_BUTTON_1_BIT, FALLING_EDGE, &buttonPushCounterISR) != SYSTEM_OK) {
         error = ERROR;
     }
-    else if (gpioPinChangeInterruptEnable(INPUT_BUTTON_1_REGISTER, INPUT_BUTTON_1_BIT, RISING_EDGE, &buttonPushISR) != SYSTEM_OK) {
+    else if (gpioPinChangeInterruptEnable(INPUT_BUTTON_1_REGISTER, INPUT_BUTTON_1_BIT, RISING_EDGE, &buttonPushCounterISR) != SYSTEM_OK) {
+        error = ERROR;
+    }
+    else if (gpioPinSetDirection(INPUT_BUTTON_2_REGISTER, INPUT_BUTTON_2_BIT, INPUT) != SYSTEM_OK) {
+        error = ERROR;
+    }
+    else if (gpioPinSetPullUp(INPUT_BUTTON_2_REGISTER, INPUT_BUTTON_2_BIT, PULLUP) != SYSTEM_OK) {
+        error = ERROR;
+    }
+    else if (gpioPinChangeInterruptEnable(INPUT_BUTTON_2_REGISTER, INPUT_BUTTON_2_BIT, FALLING_EDGE, &buttonPushSpeedISR) != SYSTEM_OK) {
+        error = ERROR;
+    }
+    else if (gpioPinChangeInterruptEnable(INPUT_BUTTON_2_REGISTER, INPUT_BUTTON_2_BIT, RISING_EDGE, &buttonPushSpeedISR) != SYSTEM_OK) {
         error = ERROR;
     }
     else if (globalInterruptEnable() != SYSTEM_OK) {
@@ -54,16 +81,16 @@ int main(void) {
         error = ERROR;
     }
     else {
-        (void)carSpeedSaveSpeed(0.0f);
         while (1) {
-            if (vehicle_passed()) {
+            if (vehicle_passed(SENSOR_COUNTER)) {
                 carCounter++;
                 if (carCounter == CAR_COUNTER_OVERFLOW) {
                     carCounter = 0u;
                 }
+                isCounterIncreased = true;
             }
             display_counter(carCounter);
-            //determine_and_show_speed();
+            determine_and_show_speed();
         }
     }
     return error;
@@ -73,44 +100,64 @@ int main(void) {
  * Check if the button wan't already reported pressed, and if time between presses is more than DEBOUCE_TIME_MS.
  * Also depend on a button release, before marking a new press.
  */
-void buttonPushISR(void) {
+void buttonPushCounterISR(void) {
     uint32_t    nowTimeTellerISR = millis();
     bool        isButtonLow = ((PINB & INPUT_BUTTON_1_BIT) == 0u); /* Make this less hardcoded */
 
     if (isButtonLow) {
-        if (!isButtonDown && ((nowTimeTellerISR - lastTimeTellerISR) >= DEBOUNCE_TIME_MS)) {
-            lastTimeTellerISR = nowTimeTellerISR;
-            isButtonDown = true;
+        if (!isButton1Down && ((nowTimeTellerISR - lastTimeTeller1ISR) >= DEBOUNCE_TIME_MS)) {
+            lastTimeTeller1ISR = nowTimeTellerISR;
+            isButton1Down = true;
             isFirstButtonPressedFlag = true;
         }
     }
-    else if (isButtonDown) {
-        isButtonDown = false;
+    else if (isButton1Down) {
+        isButton1Down = false;
     }
 }
 
-bool vehicle_passed(void) {
-    bool        hasVehiclePassed        = false;
-    static bool isPreviousAxleDetected;
-    bool        isCurrentAxleDetected   = axle_detected();
+/** 
+ * Check if the button wan't already reported pressed, and if time between presses is more than DEBOUCE_TIME_MS.
+ * Also depend on a button release, before marking a new press.
+ */
+void buttonPushSpeedISR(void) {
+    uint32_t    nowTimeTellerISR = millis();
+    bool        isButtonLow = ((PINC & INPUT_BUTTON_2_BIT) == 0u); /* Make this less hardcoded */
 
-    if (isFirstCallFunction) { /* Initialize static variable isPreviousAxleDetected */
-        isPreviousAxleDetected = false;
-        isFirstCallFunction = false;
+    if (isButtonLow) {
+        if (!isButton2Down && ((nowTimeTellerISR - lastTimeTeller2ISR) >= DEBOUNCE_TIME_MS)) {
+            lastTimeTeller2ISR = nowTimeTellerISR;
+            isButton2Down = true;
+            isSecondButtonPressedFlag = true;
+        }
+    }
+    else if (isButton2Down) {
+        isButton2Down = false;
+    }
+}
+
+bool vehicle_passed(uint8_t sensor) {
+    bool        hasVehiclePassed        = false;
+    static bool isPreviousAxleDetected[NUMBER_OF_SENSORS];
+    bool        isCurrentAxleDetected   = axle_detected(sensor);
+
+    if (isFirstCallFunction[sensor]) { /* Initialize static variable isPreviousAxleDetected */
+        isPreviousAxleDetected[sensor] = false;
+        isFirstCallFunction[sensor] = false;
     }
 
-    if (isCurrentAxleDetected && isPreviousAxleDetected) {
-        if ((millis() - timeAxlePast) < MAX_TIME_BETWEEN_AXLES_MS) {
+    if (isCurrentAxleDetected && isPreviousAxleDetected[sensor]) {
+        if ((millis() - timeAxlePast[sensor]) < MAX_TIME_BETWEEN_AXLES_MS) {
             hasVehiclePassed = true;
-            isPreviousAxleDetected = false;
+            isPreviousAxleDetected[sensor] = false;
         }
         else {
-            timeAxlePast = millis();
+            timeAxlePast[sensor] = millis();
         }
     }
-    else if (isCurrentAxleDetected && !isPreviousAxleDetected) {
-        isPreviousAxleDetected = true;
-        timeAxlePast = millis();
+    else if (isCurrentAxleDetected && !isPreviousAxleDetected[sensor]) {
+        isPreviousAxleDetected[sensor] = true;
+        timeAxlePast[sensor] = millis();
     }
     else {
         /* No axle detected, do nothing */
@@ -118,15 +165,44 @@ bool vehicle_passed(void) {
     return hasVehiclePassed;
 }
 
-bool axle_detected(void) {
+bool axle_detected(uint8_t sensor) {
     bool isAxleDeteted = false;
 
-    isAxleDeteted = isFirstButtonPressedFlag;
-    isFirstButtonPressedFlag = false;   /* Flag needs to be cleared, after handling new axle. */
-
+    if (SENSOR_COUNTER == sensor) {
+        isAxleDeteted = isFirstButtonPressedFlag;
+        isFirstButtonPressedFlag = false;   /* Flag needs to be cleared, after handling new axle. */
+    }
+    else if (SENSOR_SPEED == sensor) {
+        isAxleDeteted = isSecondButtonPressedFlag;
+        isSecondButtonPressedFlag = false;  /* Flag needs to be cleared, after handling new axle. */
+    }
     return isAxleDeteted;
 }
 
 void display_counter(uint8_t value) {
     (void)carCountDisplay(value);   /* Call previously written function to display the amount of cars that have been passed */
+}
+
+void determine_and_show_speed() {
+    float32_t speed = 0.0f;
+    static bool isSpeedBeingMeasured = false;
+
+    if (isCounterIncreased) {
+        carSpeedSaveSpeed(CLEAR_DISPLAY);
+        timeStartMeasureSpeed = millis();
+        isCounterIncreased = false;
+        isSpeedBeingMeasured = true;
+    }
+
+    if (vehicle_passed(SENSOR_SPEED) && isSpeedBeingMeasured) {
+        speed = DEFAULT_DISTANCE_M * CONVERTION_TO_KMH / (float32_t)(millis() - timeStartMeasureSpeed);
+        carSpeedSaveSpeed(speed);
+        isSpeedBeingMeasured = false;
+    }
+    else {
+        if (((millis() - timeStartMeasureSpeed) > SPEED_MEASURE_TIMEOUT_MS) && isSpeedBeingMeasured) {
+            // return error;
+            isSpeedBeingMeasured = false;
+        }
+    }
 }
