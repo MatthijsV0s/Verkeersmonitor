@@ -23,14 +23,14 @@
 #define CONVERTION_TO_KMH               (3600.0f)
 #define CONFERTION_TO_MS                (1000.0f)
 
-void buttonPushCounterISR(void);
-void buttonPushSpeedISR(void);
 void init(void);
 void initializeIO(void);
 bool vehicle_passed(uint8_t sensor);
 bool axle_detected(uint8_t sensor);
 void display_counter(uint8_t value);
-void determine_and_show_speed();
+void determine_and_show_speed(void);
+void buttonPushCounterISR(void);
+void buttonPushSpeedISR(void);
 
 volatile uint8_t    carCounter                              = 0u;
 volatile uint32_t   lastTimeTeller1ISR                      = 0u;
@@ -61,47 +61,11 @@ int main(void) {
     }
 }
 
-/** 
- * Check if the button wan't already reported pressed, and if time between presses is more than DEBOUCE_TIME_MS.
- * Also depend on a button release, before marking a new press.
- */
-void buttonPushCounterISR(void) {
-    uint32_t    nowTimeTellerISR = millis();
-    bool        isButtonLow = ((PINB & INPUT_BUTTON_1_BIT) == 0u); /* Make this less hardcoded */
-
-    if (isButtonLow) {
-        if (!isButton1Down && ((nowTimeTellerISR - lastTimeTeller1ISR) >= DEBOUNCE_TIME_MS)) {
-            lastTimeTeller1ISR = nowTimeTellerISR;
-            isButton1Down = true;
-            isFirstButtonPressedFlag = true;
-        }
-    }
-    else if (isButton1Down) {
-        isButton1Down = false;
-    }
 void init(void) {
     timerMillisInit();
     timerSpeedInit();
 }
 
-/** 
- * Check if the button wan't already reported pressed, and if time between presses is more than DEBOUCE_TIME_MS.
- * Also depend on a button release, before marking a new press.
- */
-void buttonPushSpeedISR(void) {
-    uint32_t    nowTimeTellerISR = millis();
-    bool        isButtonLow = ((PINC & INPUT_BUTTON_2_BIT) == 0u); /* Make this less hardcoded */
-
-    if (isButtonLow) {
-        if (!isButton2Down && ((nowTimeTellerISR - lastTimeTeller2ISR) >= DEBOUNCE_TIME_MS)) {
-            lastTimeTeller2ISR = nowTimeTellerISR;
-            isButton2Down = true;
-            isSecondButtonPressedFlag = true;
-        }
-    }
-    else if (isButton2Down) {
-        isButton2Down = false;
-    }
 void initializeIO(void) {
     gpioPinSetDirection(INPUT_BUTTON_1_REGISTER, INPUT_BUTTON_1_BIT, INPUT);
     gpioPinSetDirection(INPUT_BUTTON_2_REGISTER, INPUT_BUTTON_2_BIT, INPUT);
@@ -163,7 +127,7 @@ void display_counter(uint8_t value) {
     (void)carCountDisplay(value);   /* Call previously written function to display the amount of cars that have been passed */
 }
 
-void determine_and_show_speed() {
+void determine_and_show_speed(void) {
     float32_t speed = 0.0f;
     static bool isSpeedBeingMeasured = false;
 
@@ -184,5 +148,45 @@ void determine_and_show_speed() {
             // return error;
             isSpeedBeingMeasured = false;
         }
+    }
+}
+
+/** 
+ * Check if the button wan't already reported pressed, and if time between presses is more than DEBOUCE_TIME_MS.
+ * Also depend on a button release, before marking a new press.
+ */
+void buttonPushCounterISR(void) {
+    uint32_t    nowTimeTellerISR = millis();
+    bool        isButtonLow = ((PINB & INPUT_BUTTON_1_BIT) == 0u); /* Make this less hardcoded */
+
+    if (isButtonLow) {
+        if (!isButton1Down && ((nowTimeTellerISR - lastTimeTeller1ISR) >= DEBOUNCE_TIME_MS)) {
+            lastTimeTeller1ISR = nowTimeTellerISR;
+            isButton1Down = true;
+            isFirstButtonPressedFlag = true;
+        }
+    }
+    else if (isButton1Down) {
+        isButton1Down = false;
+    }
+}
+
+/** 
+ * Check if the button wan't already reported pressed, and if time between presses is more than DEBOUCE_TIME_MS.
+ * Also depend on a button release, before marking a new press.
+ */
+void buttonPushSpeedISR(void) {
+    uint32_t    nowTimeTellerISR = millis();
+    bool        isButtonLow = ((PINC & INPUT_BUTTON_2_BIT) == 0u); /* Make this less hardcoded */
+
+    if (isButtonLow) {
+        if (!isButton2Down && ((nowTimeTellerISR - lastTimeTeller2ISR) >= DEBOUNCE_TIME_MS)) {
+            lastTimeTeller2ISR = nowTimeTellerISR;
+            isButton2Down = true;
+            isSecondButtonPressedFlag = true;
+        }
+    }
+    else if (isButton2Down) {
+        isButton2Down = false;
     }
 }
