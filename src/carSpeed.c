@@ -2,6 +2,8 @@
 #include "displayBinairy.h"
 #include "errors.h"
 
+static uint8_t bitIndex(uint8_t value);
+
 const uint8_t segments[10] = {  /* Binairy values follow this layout: 0b0GFEDCBA, with A-G representing the segments */
     0b00111111,                 /* 0 */
     0b00000110,                 /* 1 */
@@ -64,7 +66,7 @@ int32_t carSpeedShowSpeed(uint8_t numberPort, uint8_t digitPort, uint8_t numberF
     if (SYSTEM_OK != gpioPinSetValue(digitPort, digitBits, HIGH)) {
         error = ERROR;
     }
-    else if (SYSTEM_OK != displayBinairyShowValue(speedSegmentBuffer[digit], numberPort, numberFirstBit, numberMask)) {
+    else if (SYSTEM_OK != displaySegments(speedSegmentBuffer[digit], numberPort, numberFirstBit, numberMask)) {
         error = ERROR;
     }
     else if (SYSTEM_OK != gpioPinSetValue(digitPort, (digitFirstBit << digit), LOW)) {
@@ -80,4 +82,28 @@ int32_t carSpeedShowSpeed(uint8_t numberPort, uint8_t digitPort, uint8_t numberF
         digit = (digit + 1) & 0x03;
     }
     return error;
+}
+
+int32_t displaySegments(uint8_t value, uint8_t port, uint8_t firstBit, uint8_t mask) {
+    int32_t error = SYSTEM_OK;
+    uint8_t copyOutput = 0u;
+    uint8_t output = 0u;
+
+    if (value != EMPTY_SEGMENT) {
+        output = segments[value];
+    }
+    output = (output << bitIndex(firstBit));
+    port *= 3u;
+    copyOutput = (*(&PORTB + port)) & mask;
+    (*(&PORTB + port)) = copyOutput | output;
+
+    return error;
+}
+
+static uint8_t bitIndex(uint8_t value) {
+    uint8_t index = 0u;
+    while (value >>= 1) {
+        index++;
+    }
+    return index;
 }
