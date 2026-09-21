@@ -25,6 +25,8 @@
 
 void buttonPushCounterISR(void);
 void buttonPushSpeedISR(void);
+void init(void);
+void initializeIO(void);
 bool vehicle_passed(uint8_t sensor);
 bool axle_detected(uint8_t sensor);
 void display_counter(uint8_t value);
@@ -43,57 +45,20 @@ volatile uint32_t   timeStartMeasureSpeed                   = 0u;
 bool                isCounterIncreased                      = false;
 
 int main(void) {
-    int32_t error = SYSTEM_OK;
-    timerMillisInit();
-    timerSpeedInit();
+    init();
+    initializeIO();
 
-    if (gpioPinSetDirection(INPUT_BUTTON_1_REGISTER, INPUT_BUTTON_1_BIT, INPUT) != SYSTEM_OK) {
-        error = ERROR;
-    }
-    else if (gpioPinSetPullUp(INPUT_BUTTON_1_REGISTER, INPUT_BUTTON_1_BIT, PULLUP) != SYSTEM_OK) {
-        error = ERROR;
-    }
-    else if (gpioPinChangeInterruptEnable(INPUT_BUTTON_1_REGISTER, INPUT_BUTTON_1_BIT, FALLING_EDGE, &buttonPushCounterISR) != SYSTEM_OK) {
-        error = ERROR;
-    }
-    else if (gpioPinChangeInterruptEnable(INPUT_BUTTON_1_REGISTER, INPUT_BUTTON_1_BIT, RISING_EDGE, &buttonPushCounterISR) != SYSTEM_OK) {
-        error = ERROR;
-    }
-    else if (gpioPinSetDirection(INPUT_BUTTON_2_REGISTER, INPUT_BUTTON_2_BIT, INPUT) != SYSTEM_OK) {
-        error = ERROR;
-    }
-    else if (gpioPinSetPullUp(INPUT_BUTTON_2_REGISTER, INPUT_BUTTON_2_BIT, PULLUP) != SYSTEM_OK) {
-        error = ERROR;
-    }
-    else if (gpioPinChangeInterruptEnable(INPUT_BUTTON_2_REGISTER, INPUT_BUTTON_2_BIT, FALLING_EDGE, &buttonPushSpeedISR) != SYSTEM_OK) {
-        error = ERROR;
-    }
-    else if (gpioPinChangeInterruptEnable(INPUT_BUTTON_2_REGISTER, INPUT_BUTTON_2_BIT, RISING_EDGE, &buttonPushSpeedISR) != SYSTEM_OK) {
-        error = ERROR;
-    }
-    else if (globalInterruptEnable() != SYSTEM_OK) {
-        error = ERROR;
-    }
-    else if (SYSTEM_OK != carCountInit()) {
-        error = ERROR;
-    }
-    else if (SYSTEM_OK != carSpeedInit()) {
-        error = ERROR;
-    }
-    else {
-        while (1) {
-            if (vehicle_passed(SENSOR_COUNTER)) {
-                carCounter++;
-                if (carCounter == CAR_COUNTER_OVERFLOW) {
-                    carCounter = 0u;
-                }
-                isCounterIncreased = true;
+    while (1) {
+        if (vehicle_passed(SENSOR_COUNTER)) {
+            carCounter++;
+            if (carCounter == CAR_COUNTER_OVERFLOW) {
+                carCounter = 0u;
             }
-            display_counter(carCounter);
-            determine_and_show_speed();
+            isCounterIncreased = true;
         }
+        display_counter(carCounter);
+        determine_and_show_speed();
     }
-    return error;
 }
 
 /** 
@@ -114,6 +79,9 @@ void buttonPushCounterISR(void) {
     else if (isButton1Down) {
         isButton1Down = false;
     }
+void init(void) {
+    timerMillisInit();
+    timerSpeedInit();
 }
 
 /** 
@@ -134,6 +102,18 @@ void buttonPushSpeedISR(void) {
     else if (isButton2Down) {
         isButton2Down = false;
     }
+void initializeIO(void) {
+    gpioPinSetDirection(INPUT_BUTTON_1_REGISTER, INPUT_BUTTON_1_BIT, INPUT);
+    gpioPinSetDirection(INPUT_BUTTON_2_REGISTER, INPUT_BUTTON_2_BIT, INPUT);
+    gpioPinSetPullUp(INPUT_BUTTON_1_REGISTER, INPUT_BUTTON_1_BIT, PULLUP);
+    gpioPinSetPullUp(INPUT_BUTTON_2_REGISTER, INPUT_BUTTON_2_BIT, PULLUP);
+    gpioPinChangeInterruptEnable(INPUT_BUTTON_1_REGISTER, INPUT_BUTTON_1_BIT, FALLING_EDGE, &buttonPushCounterISR);
+    gpioPinChangeInterruptEnable(INPUT_BUTTON_1_REGISTER, INPUT_BUTTON_1_BIT, RISING_EDGE, &buttonPushCounterISR);
+    gpioPinChangeInterruptEnable(INPUT_BUTTON_2_REGISTER, INPUT_BUTTON_2_BIT, FALLING_EDGE, &buttonPushSpeedISR);
+    gpioPinChangeInterruptEnable(INPUT_BUTTON_2_REGISTER, INPUT_BUTTON_2_BIT, RISING_EDGE, &buttonPushSpeedISR);
+    carCountInit();
+    carSpeedInit();
+    globalInterruptEnable();
 }
 
 bool vehicle_passed(uint8_t sensor) {
