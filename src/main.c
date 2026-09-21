@@ -23,12 +23,14 @@
 #define CONVERTION_TO_KMH               (3600.0f)
 #define CONFERTION_TO_MS                (1000.0f)
 
-void buttonPushCounterISR(void);
-void buttonPushSpeedISR(void);
+void init(void);
+void initializeIO(void);
 bool vehicle_passed(uint8_t sensor);
 bool axle_detected(uint8_t sensor);
 void display_counter(uint8_t value);
-void determine_and_show_speed();
+void determine_and_show_speed(void);
+void buttonPushCounterISR(void);
+void buttonPushSpeedISR(void);
 
 volatile uint8_t    carCounter                              = 0u;
 volatile uint32_t   lastTimeTeller1ISR                      = 0u;
@@ -43,97 +45,39 @@ volatile uint32_t   timeStartMeasureSpeed                   = 0u;
 bool                isCounterIncreased                      = false;
 
 int main(void) {
-    int32_t error = SYSTEM_OK;
+    init();
+    initializeIO();
+
+    while (1) {
+        if (vehicle_passed(SENSOR_COUNTER)) {
+            carCounter++;
+            if (carCounter == CAR_COUNTER_OVERFLOW) {
+                carCounter = 0u;
+            }
+            isCounterIncreased = true;
+        }
+        display_counter(carCounter);
+        determine_and_show_speed();
+    }
+}
+
+void init(void) {
     timerMillisInit();
     timerSpeedInit();
-
-    if (gpioPinSetDirection(INPUT_BUTTON_1_REGISTER, INPUT_BUTTON_1_BIT, INPUT) != SYSTEM_OK) {
-        error = ERROR;
-    }
-    else if (gpioPinSetPullUp(INPUT_BUTTON_1_REGISTER, INPUT_BUTTON_1_BIT, PULLUP) != SYSTEM_OK) {
-        error = ERROR;
-    }
-    else if (gpioPinChangeInterruptEnable(INPUT_BUTTON_1_REGISTER, INPUT_BUTTON_1_BIT, FALLING_EDGE, &buttonPushCounterISR) != SYSTEM_OK) {
-        error = ERROR;
-    }
-    else if (gpioPinChangeInterruptEnable(INPUT_BUTTON_1_REGISTER, INPUT_BUTTON_1_BIT, RISING_EDGE, &buttonPushCounterISR) != SYSTEM_OK) {
-        error = ERROR;
-    }
-    else if (gpioPinSetDirection(INPUT_BUTTON_2_REGISTER, INPUT_BUTTON_2_BIT, INPUT) != SYSTEM_OK) {
-        error = ERROR;
-    }
-    else if (gpioPinSetPullUp(INPUT_BUTTON_2_REGISTER, INPUT_BUTTON_2_BIT, PULLUP) != SYSTEM_OK) {
-        error = ERROR;
-    }
-    else if (gpioPinChangeInterruptEnable(INPUT_BUTTON_2_REGISTER, INPUT_BUTTON_2_BIT, FALLING_EDGE, &buttonPushSpeedISR) != SYSTEM_OK) {
-        error = ERROR;
-    }
-    else if (gpioPinChangeInterruptEnable(INPUT_BUTTON_2_REGISTER, INPUT_BUTTON_2_BIT, RISING_EDGE, &buttonPushSpeedISR) != SYSTEM_OK) {
-        error = ERROR;
-    }
-    else if (globalInterruptEnable() != SYSTEM_OK) {
-        error = ERROR;
-    }
-    else if (SYSTEM_OK != carCountInit()) {
-        error = ERROR;
-    }
-    else if (SYSTEM_OK != carSpeedInit()) {
-        error = ERROR;
-    }
-    else {
-        while (1) {
-            if (vehicle_passed(SENSOR_COUNTER)) {
-                carCounter++;
-                if (carCounter == CAR_COUNTER_OVERFLOW) {
-                    carCounter = 0u;
-                }
-                isCounterIncreased = true;
-            }
-            display_counter(carCounter);
-            determine_and_show_speed();
-        }
-    }
-    return error;
 }
 
-/** 
- * Check if the button wan't already reported pressed, and if time between presses is more than DEBOUCE_TIME_MS.
- * Also depend on a button release, before marking a new press.
- */
-void buttonPushCounterISR(void) {
-    uint32_t    nowTimeTellerISR = millis();
-    bool        isButtonLow = ((PINB & INPUT_BUTTON_1_BIT) == 0u); /* Make this less hardcoded */
-
-    if (isButtonLow) {
-        if (!isButton1Down && ((nowTimeTellerISR - lastTimeTeller1ISR) >= DEBOUNCE_TIME_MS)) {
-            lastTimeTeller1ISR = nowTimeTellerISR;
-            isButton1Down = true;
-            isFirstButtonPressedFlag = true;
-        }
-    }
-    else if (isButton1Down) {
-        isButton1Down = false;
-    }
-}
-
-/** 
- * Check if the button wan't already reported pressed, and if time between presses is more than DEBOUCE_TIME_MS.
- * Also depend on a button release, before marking a new press.
- */
-void buttonPushSpeedISR(void) {
-    uint32_t    nowTimeTellerISR = millis();
-    bool        isButtonLow = ((PINC & INPUT_BUTTON_2_BIT) == 0u); /* Make this less hardcoded */
-
-    if (isButtonLow) {
-        if (!isButton2Down && ((nowTimeTellerISR - lastTimeTeller2ISR) >= DEBOUNCE_TIME_MS)) {
-            lastTimeTeller2ISR = nowTimeTellerISR;
-            isButton2Down = true;
-            isSecondButtonPressedFlag = true;
-        }
-    }
-    else if (isButton2Down) {
-        isButton2Down = false;
-    }
+void initializeIO(void) {
+    gpioPinSetDirection(INPUT_BUTTON_1_REGISTER, INPUT_BUTTON_1_BIT, INPUT);
+    gpioPinSetDirection(INPUT_BUTTON_2_REGISTER, INPUT_BUTTON_2_BIT, INPUT);
+    gpioPinSetPullUp(INPUT_BUTTON_1_REGISTER, INPUT_BUTTON_1_BIT, PULLUP);
+    gpioPinSetPullUp(INPUT_BUTTON_2_REGISTER, INPUT_BUTTON_2_BIT, PULLUP);
+    gpioPinChangeInterruptEnable(INPUT_BUTTON_1_REGISTER, INPUT_BUTTON_1_BIT, FALLING_EDGE, &buttonPushCounterISR);
+    gpioPinChangeInterruptEnable(INPUT_BUTTON_1_REGISTER, INPUT_BUTTON_1_BIT, RISING_EDGE, &buttonPushCounterISR);
+    gpioPinChangeInterruptEnable(INPUT_BUTTON_2_REGISTER, INPUT_BUTTON_2_BIT, FALLING_EDGE, &buttonPushSpeedISR);
+    gpioPinChangeInterruptEnable(INPUT_BUTTON_2_REGISTER, INPUT_BUTTON_2_BIT, RISING_EDGE, &buttonPushSpeedISR);
+    carCountInit();
+    carSpeedInit();
+    globalInterruptEnable();
 }
 
 bool vehicle_passed(uint8_t sensor) {
@@ -183,7 +127,7 @@ void display_counter(uint8_t value) {
     (void)carCountDisplay(value);   /* Call previously written function to display the amount of cars that have been passed */
 }
 
-void determine_and_show_speed() {
+void determine_and_show_speed(void) {
     float32_t speed = 0.0f;
     static bool isSpeedBeingMeasured = false;
 
@@ -204,5 +148,45 @@ void determine_and_show_speed() {
             // return error;
             isSpeedBeingMeasured = false;
         }
+    }
+}
+
+/** 
+ * Check if the button wan't already reported pressed, and if time between presses is more than DEBOUCE_TIME_MS.
+ * Also depend on a button release, before marking a new press.
+ */
+void buttonPushCounterISR(void) {
+    uint32_t    nowTimeTellerISR = millis();
+    bool        isButtonLow = ((PINB & INPUT_BUTTON_1_BIT) == 0u); /* Make this less hardcoded */
+
+    if (isButtonLow) {
+        if (!isButton1Down && ((nowTimeTellerISR - lastTimeTeller1ISR) >= DEBOUNCE_TIME_MS)) {
+            lastTimeTeller1ISR = nowTimeTellerISR;
+            isButton1Down = true;
+            isFirstButtonPressedFlag = true;
+        }
+    }
+    else if (isButton1Down) {
+        isButton1Down = false;
+    }
+}
+
+/** 
+ * Check if the button wan't already reported pressed, and if time between presses is more than DEBOUCE_TIME_MS.
+ * Also depend on a button release, before marking a new press.
+ */
+void buttonPushSpeedISR(void) {
+    uint32_t    nowTimeTellerISR = millis();
+    bool        isButtonLow = ((PINC & INPUT_BUTTON_2_BIT) == 0u); /* Make this less hardcoded */
+
+    if (isButtonLow) {
+        if (!isButton2Down && ((nowTimeTellerISR - lastTimeTeller2ISR) >= DEBOUNCE_TIME_MS)) {
+            lastTimeTeller2ISR = nowTimeTellerISR;
+            isButton2Down = true;
+            isSecondButtonPressedFlag = true;
+        }
+    }
+    else if (isButton2Down) {
+        isButton2Down = false;
     }
 }
