@@ -15,8 +15,9 @@
 #define MAX_TIME_BETWEEN_AXLES_MS       (1000u)
 
 void buttonPushISR(void);
-bool vehicle_passed();
-bool axle_detected();
+bool vehicle_passed(void);
+bool axle_detected(void);
+void display_counter(uint8_t value);
 
 volatile uint8_t    carCounter                  = 0u;
 volatile uint32_t   lastTimeTellerISR           = 0u;
@@ -61,7 +62,8 @@ int main(void) {
                     carCounter = 0u;
                 }
             }
-            (void)carCountDisplay(carCounter);
+            display_counter(carCounter);
+            //determine_and_show_speed();
         }
     }
     return error;
@@ -72,8 +74,8 @@ int main(void) {
  * Also depend on a button release, before marking a new press.
  */
 void buttonPushISR(void) {
-    uint32_t nowTimeTellerISR = millis();
-    bool isButtonLow = ((PINB & INPUT_BUTTON_1_BIT) == 0u); /* Make this less hardcoded */
+    uint32_t    nowTimeTellerISR = millis();
+    bool        isButtonLow = ((PINB & INPUT_BUTTON_1_BIT) == 0u); /* Make this less hardcoded */
 
     if (isButtonLow) {
         if (!isButtonDown && ((nowTimeTellerISR - lastTimeTellerISR) >= DEBOUNCE_TIME_MS)) {
@@ -87,11 +89,12 @@ void buttonPushISR(void) {
     }
 }
 
-bool vehicle_passed() {
-    bool hasVehiclePassed = false;
+bool vehicle_passed(void) {
+    bool        hasVehiclePassed        = false;
     static bool isPreviousAxleDetected;
-    bool isCurrentAxleDetected = axle_detected();
-    if (isFirstCallFunction) {
+    bool        isCurrentAxleDetected   = axle_detected();
+
+    if (isFirstCallFunction) { /* Initialize static variable isPreviousAxleDetected */
         isPreviousAxleDetected = false;
         isFirstCallFunction = false;
     }
@@ -115,9 +118,15 @@ bool vehicle_passed() {
     return hasVehiclePassed;
 }
 
-bool axle_detected() {
+bool axle_detected(void) {
     bool isAxleDeteted = false;
+
     isAxleDeteted = isFirstButtonPressedFlag;
     isFirstButtonPressedFlag = false;   /* Flag needs to be cleared, after handling new axle. */
+
     return isAxleDeteted;
+}
+
+void display_counter(uint8_t value) {
+    (void)carCountDisplay(value);   /* Call previously written function to display the amount of cars that have been passed */
 }
