@@ -15,15 +15,20 @@
 
 #define CAR_COUNTER_OVERFLOW            (16u)
 #define MAX_TIME_BETWEEN_AXLES_MS       (1000u)
+#define SPEED_MEASURE_TIMEOUT_MS        (10811u) /* 10.811 seconds at a 0.6 meter distance = 0.2 km/h */
+#define DEFAULT_DISTANCE_M              (0.6f)
 #define SENSOR_COUNTER                  (0u)
 #define SENSOR_SPEED                    (1u)
 #define NUMBER_OF_SENSORS               (2u)
+#define CONVERTION_TO_KMH               (3600.0f)
+#define CONFERTION_TO_MS                (1000.0f)
 
 void buttonPushCounterISR(void);
 void buttonPushSpeedISR(void);
 bool vehicle_passed(uint8_t sensor);
 bool axle_detected(uint8_t sensor);
 void display_counter(uint8_t value);
+void determine_and_show_speed();
 
 volatile uint8_t    carCounter                              = 0u;
 volatile uint32_t   lastTimeTeller1ISR                      = 0u;
@@ -34,6 +39,8 @@ volatile bool       isFirstButtonPressedFlag                = false;
 volatile bool       isSecondButtonPressedFlag               = false;
 bool                isFirstCallFunction[NUMBER_OF_SENSORS]  = {true, true};
 volatile uint32_t   timeAxlePast[NUMBER_OF_SENSORS]         = {0u};
+volatile uint32_t   timeStartMeasureSpeed                   = 0u;
+bool                isCounterIncreased                      = false;
 
 int main(void) {
     int32_t error = SYSTEM_OK;
@@ -80,9 +87,10 @@ int main(void) {
                 if (carCounter == CAR_COUNTER_OVERFLOW) {
                     carCounter = 0u;
                 }
+                isCounterIncreased = true;
             }
             display_counter(carCounter);
-            //determine_and_show_speed();
+            determine_and_show_speed();
         }
     }
     return error;
@@ -173,4 +181,28 @@ bool axle_detected(uint8_t sensor) {
 
 void display_counter(uint8_t value) {
     (void)carCountDisplay(value);   /* Call previously written function to display the amount of cars that have been passed */
+}
+
+void determine_and_show_speed() {
+    float32_t speed = 0.0f;
+    static bool isSpeedBeingMeasured = false;
+
+    if (isCounterIncreased) {
+        carSpeedSaveSpeed(CLEAR_DISPLAY);
+        timeStartMeasureSpeed = millis();
+        isCounterIncreased = false;
+        isSpeedBeingMeasured = true;
+    }
+
+    if (vehicle_passed(SENSOR_SPEED) && isSpeedBeingMeasured) {
+        speed = DEFAULT_DISTANCE_M * CONVERTION_TO_KMH / (float32_t)(millis() - timeStartMeasureSpeed);
+        carSpeedSaveSpeed(speed);
+        isSpeedBeingMeasured = false;
+    }
+    else {
+        if (((millis() - timeStartMeasureSpeed) > SPEED_MEASURE_TIMEOUT_MS) && isSpeedBeingMeasured) {
+            // return error;
+            isSpeedBeingMeasured = false;
+        }
+    }
 }
