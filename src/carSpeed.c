@@ -23,7 +23,7 @@ int32_t carSpeedInit(void) {
     return error;
 }
 
-int32_t carSpeedSaveSpeed(float speedMS) {
+int32_t carSpeedSaveSpeed(float32_t speed) {
     int32_t error = SYSTEM_OK;
     uint16_t number = 0u;
     number = (uint16_t)(speedMS * 10.0);
