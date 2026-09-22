@@ -30,7 +30,11 @@
 #define SENSOR_SPEED                    (1u)
 #define NUMBER_OF_SENSORS               (2u)
 #define CONVERTION_TO_KMH               (3600.0f)
-#define CONFERTION_TO_MS                (1000.0f)
+#define CONVERTION_TO_MS                (1000.0f)
+#define CONVERTION_FACTOR               CONVERTION_TO_KMH
+#define MAX_SPEED_KMH                   (10.0f)
+#define MAX_SPEED_MS                    (2.8f)
+#define MAX_SPEED                       MAX_SPEED_KMH
 
 void init(void);
 void initializeIO(void);
@@ -141,8 +145,11 @@ void determineAndShowSpeed(void) {
         isSpeedBeingMeasured = true;
     }
 
-    if (vehicle_passed(SENSOR_SPEED) && isSpeedBeingMeasured) {
-        speed = DEFAULT_DISTANCE_M * CONVERTION_TO_KMH / (float32_t)(millis() - timeStartMeasureSpeed);
+    if (vehiclePassed(SENSOR_SPEED) && isSpeedBeingMeasured) {
+        speed = DEFAULT_DISTANCE_M * CONVERTION_FACTOR / (float32_t)(millis() - timeStartMeasureSpeed);
+        if (speed >= MAX_SPEED) {
+            speed = MAX_SPEED;
+        }
         carSpeedSaveSpeed(speed);
         isSpeedBeingMeasured = false;
     }
