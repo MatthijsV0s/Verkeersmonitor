@@ -15,6 +15,9 @@
 #include "carCount.h"
 #include "displayBinairy.h"
 
+#define ONE_AXLE                        (1)
+#define TWO_AXLE                        (0)
+
 #define INPUT_BUTTON_1_REGISTER         (PC)
 #define INPUT_BUTTON_1_BIT              (BIT4)
 #define INPUT_BUTTON_2_REGISTER         (PC)
@@ -97,6 +100,15 @@ bool vehiclePassed(uint8_t sensor) {
     static bool isPreviousAxleDetected[NUMBER_OF_SENSORS] = {false, false};
     bool        isCurrentAxleDetected   = axleDetected(sensor);
 
+#if ONE_AXLE
+    if (isCurrentAxleDetected) {
+        hasVehiclePassed = true;
+        timeAxlePast[sensor] = millis();
+    }
+    else {
+        /* No axle detected, do nothing */
+    }
+#elif TWO_AXLE
     if (isCurrentAxleDetected && isPreviousAxleDetected[sensor]) {
         if ((millis() - timeAxlePast[sensor]) < MAX_TIME_BETWEEN_AXLES_MS) {
             hasVehiclePassed = true;
@@ -113,6 +125,7 @@ bool vehiclePassed(uint8_t sensor) {
     else {
         /* No axle detected, do nothing */
     }
+#endif
     return hasVehiclePassed;
 }
 
