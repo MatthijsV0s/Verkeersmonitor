@@ -33,8 +33,8 @@ int32_t carSpeedInit(void) {
     }
     speedSegmentBuffer[0] = 0u;
     speedSegmentBuffer[1] = 0u;
-    speedSegmentBuffer[2] = 0u;
-    speedSegmentBuffer[3] = 0u;
+    speedSegmentBuffer[2] = EMPTY_SEGMENT;
+    speedSegmentBuffer[3] = EMPTY_SEGMENT;
     return error;
 }
 
@@ -55,6 +55,14 @@ int32_t carSpeedSaveSpeed(float32_t speed) {
         speedSegmentBuffer[1] = (number / 10u)   % 10u;
         speedSegmentBuffer[2] = (number / 100u)  % 10u;
         speedSegmentBuffer[3] = (number / 1000u) % 10u;
+
+        if ((0u == speedSegmentBuffer[2]) && (0u == speedSegmentBuffer[3])) {
+            speedSegmentBuffer[2] = EMPTY_SEGMENT;
+            speedSegmentBuffer[3] = EMPTY_SEGMENT;
+        }
+        else if (0u == speedSegmentBuffer[3]) {
+            speedSegmentBuffer[3] = EMPTY_SEGMENT;
+        }
     }
     return error;
 }
