@@ -39,14 +39,14 @@
 #define MAX_SPEED_MS                    (2.8f)
 #define MAX_SPEED                       MAX_SPEED_KMH
 
-void init(void);
-void initializeIO(void);
-bool vehiclePassed(uint8_t sensor);
-bool axleDetected(uint8_t sensor);
-void displayCounter(uint8_t value);
-void determineAndShowSpeed(void);
-void buttonPushCounterISR(void);
-void buttonPushSpeedISR(void);
+static void init(void);
+static void initializeIO(void);
+static bool vehiclePassed(uint8_t sensor);
+static bool axleDetected(uint8_t sensor);
+static void displayCounter(uint8_t value);
+static void determineAndShowSpeed(void);
+static void buttonPushCounterISR(void);
+static void buttonPushSpeedISR(void);
 
 volatile uint32_t   lastTimeTeller1ISR                      = 0u;
 volatile uint32_t   lastTimeTeller2ISR                      = 0u;
@@ -76,12 +76,12 @@ int main(void) {
     }
 }
 
-void init(void) {
+static void init(void) {
     timerMillisInit();
     timerSpeedInit();
 }
 
-void initializeIO(void) {
+static void initializeIO(void) {
     gpioPinSetDirection(INPUT_BUTTON_1_REGISTER, INPUT_BUTTON_1_BIT, INPUT);
     gpioPinSetDirection(INPUT_BUTTON_2_REGISTER, INPUT_BUTTON_2_BIT, INPUT);
     gpioPinSetPullUp(INPUT_BUTTON_1_REGISTER, INPUT_BUTTON_1_BIT, PULLUP);
@@ -95,7 +95,7 @@ void initializeIO(void) {
     globalInterruptEnable();
 }
 
-bool vehiclePassed(uint8_t sensor) {
+static bool vehiclePassed(uint8_t sensor) {
     bool        hasVehiclePassed        = false;
     static bool isPreviousAxleDetected[NUMBER_OF_SENSORS] = {false, false};
     bool        isCurrentAxleDetected   = axleDetected(sensor);
@@ -129,7 +129,7 @@ bool vehiclePassed(uint8_t sensor) {
     return hasVehiclePassed;
 }
 
-bool axleDetected(uint8_t sensor) {
+static bool axleDetected(uint8_t sensor) {
     bool isAxleDeteted = false;
 
     if (SENSOR_COUNTER == sensor) {
@@ -143,11 +143,11 @@ bool axleDetected(uint8_t sensor) {
     return isAxleDeteted;
 }
 
-void displayCounter(uint8_t value) {
+static void displayCounter(uint8_t value) {
     (void)carCountDisplay(value);   /* Call previously written function to display the amount of cars that have been passed */
 }
 
-void determineAndShowSpeed(void) {
+static void determineAndShowSpeed(void) {
     float32_t speed = 0.0f;
     static bool isSpeedBeingMeasured = false;
 
@@ -178,7 +178,7 @@ void determineAndShowSpeed(void) {
  * Check if the button wan't already reported pressed, and if time between presses is more than DEBOUCE_TIME_MS.
  * Also depend on a button release, before marking a new press.
  */
-void buttonPushCounterISR(void) {
+static void buttonPushCounterISR(void) {
     uint32_t    nowTimeTellerISR = millis();
     bool        isButtonLow = ((PINC & INPUT_BUTTON_1_BIT) == 0u); /* Make this less hardcoded */
 
@@ -198,7 +198,7 @@ void buttonPushCounterISR(void) {
  * Check if the button wan't already reported pressed, and if time between presses is more than DEBOUCE_TIME_MS.
  * Also depend on a button release, before marking a new press.
  */
-void buttonPushSpeedISR(void) {
+static void buttonPushSpeedISR(void) {
     uint32_t    nowTimeTellerISR = millis();
     bool        isButtonLow = ((PINC & INPUT_BUTTON_2_BIT) == 0u); /* Make this less hardcoded */
 
