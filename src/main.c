@@ -22,6 +22,8 @@
 #define INPUT_BUTTON_1_BIT              (BIT4)
 #define INPUT_BUTTON_2_REGISTER         (PC)
 #define INPUT_BUTTON_2_BIT              (BIT5)
+#define OUTPUT_LED_ERROR_REGISTER       (PB)
+#define OUTPUT_LED_ERROR_BIT            (BIT4)
 
 #define DEBOUNCE_TIME_MS                (10u)
 
@@ -84,6 +86,7 @@ static void init(void) {
 static void initializeIO(void) {
     gpioPinSetDirection(INPUT_BUTTON_1_REGISTER, INPUT_BUTTON_1_BIT, INPUT);
     gpioPinSetDirection(INPUT_BUTTON_2_REGISTER, INPUT_BUTTON_2_BIT, INPUT);
+    gpioPinSetDirection(OUTPUT_LED_ERROR_REGISTER, OUTPUT_LED_ERROR_BIT, OUTPUT);
     gpioPinSetPullUp(INPUT_BUTTON_1_REGISTER, INPUT_BUTTON_1_BIT, PULLUP);
     gpioPinSetPullUp(INPUT_BUTTON_2_REGISTER, INPUT_BUTTON_2_BIT, PULLUP);
     gpioPinChangeInterruptEnable(INPUT_BUTTON_1_REGISTER, INPUT_BUTTON_1_BIT, FALLING_EDGE, &buttonPushCounterISR);
@@ -163,12 +166,13 @@ static void determineAndShowSpeed(void) {
         if (speed >= MAX_SPEED) {
             speed = MAX_SPEED;
         }
+        gpioPinSetValue(OUTPUT_LED_ERROR_REGISTER, OUTPUT_LED_ERROR_BIT, LOW);
         carSpeedSaveSpeed(speed);
         isSpeedBeingMeasured = false;
     }
     else {
         if (((millis() - timeStartMeasureSpeed) > SPEED_MEASURE_TIMEOUT_MS) && isSpeedBeingMeasured) {
-            // return error;
+            gpioPinSetValue(OUTPUT_LED_ERROR_REGISTER, OUTPUT_LED_ERROR_BIT, HIGH);
             isSpeedBeingMeasured = false;
         }
     }
