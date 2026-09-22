@@ -140,13 +140,13 @@ void determineAndShowSpeed(void) {
 
     if (isCounterIncreased) {
         carSpeedSaveSpeed(CLEAR_DISPLAY);
-        timeStartMeasureSpeed = millis();
+        timeStartMeasureSpeed = timeAxlePast[SENSOR_COUNTER];
         isCounterIncreased = false;
         isSpeedBeingMeasured = true;
     }
 
     if (vehiclePassed(SENSOR_SPEED) && isSpeedBeingMeasured) {
-        speed = DEFAULT_DISTANCE_M * CONVERTION_FACTOR / (float32_t)(millis() - timeStartMeasureSpeed);
+        speed = DEFAULT_DISTANCE_M * CONVERTION_FACTOR / (float32_t)(timeAxlePast[SENSOR_SPEED] - timeStartMeasureSpeed);
         if (speed >= MAX_SPEED) {
             speed = MAX_SPEED;
         }
