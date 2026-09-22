@@ -39,7 +39,6 @@ volatile bool       isButton1Down                           = false;
 volatile bool       isButton2Down                           = false;
 volatile bool       isFirstButtonPressedFlag                = false;
 volatile bool       isSecondButtonPressedFlag               = false;
-bool                isFirstCallFunction[NUMBER_OF_SENSORS]  = {true, true};
 volatile uint32_t   timeAxlePast[NUMBER_OF_SENSORS]         = {0u};
 volatile uint32_t   timeStartMeasureSpeed                   = 0u;
 bool                isCounterIncreased                      = false;
@@ -82,13 +81,8 @@ void initializeIO(void) {
 
 bool vehicle_passed(uint8_t sensor) {
     bool        hasVehiclePassed        = false;
-    static bool isPreviousAxleDetected[NUMBER_OF_SENSORS];
+    static bool isPreviousAxleDetected[NUMBER_OF_SENSORS] = {false, false};
     bool        isCurrentAxleDetected   = axle_detected(sensor);
-
-    if (isFirstCallFunction[sensor]) { /* Initialize static variable isPreviousAxleDetected */
-        isPreviousAxleDetected[sensor] = false;
-        isFirstCallFunction[sensor] = false;
-    }
 
     if (isCurrentAxleDetected && isPreviousAxleDetected[sensor]) {
         if ((millis() - timeAxlePast[sensor]) < MAX_TIME_BETWEEN_AXLES_MS) {
