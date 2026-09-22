@@ -34,10 +34,10 @@
 
 void init(void);
 void initializeIO(void);
-bool vehicle_passed(uint8_t sensor);
-bool axle_detected(uint8_t sensor);
-void display_counter(uint8_t value);
-void determine_and_show_speed(void);
+bool vehiclePassed(uint8_t sensor);
+bool axleDetected(uint8_t sensor);
+void displayCounter(uint8_t value);
+void determineAndShowSpeed(void);
 void buttonPushCounterISR(void);
 void buttonPushSpeedISR(void);
 
@@ -57,15 +57,15 @@ int main(void) {
     initializeIO();
 
     while (1) {
-        if (vehicle_passed(SENSOR_COUNTER)) {
+        if (vehiclePassed(SENSOR_COUNTER)) {
             carCounter++;
             if (carCounter == CAR_COUNTER_OVERFLOW) {
                 carCounter = 0u;
             }
             isCounterIncreased = true;
         }
-        display_counter(carCounter);
-        determine_and_show_speed();
+        displayCounter(carCounter);
+        determineAndShowSpeed();
     }
 }
 
@@ -88,10 +88,10 @@ void initializeIO(void) {
     globalInterruptEnable();
 }
 
-bool vehicle_passed(uint8_t sensor) {
+bool vehiclePassed(uint8_t sensor) {
     bool        hasVehiclePassed        = false;
     static bool isPreviousAxleDetected[NUMBER_OF_SENSORS] = {false, false};
-    bool        isCurrentAxleDetected   = axle_detected(sensor);
+    bool        isCurrentAxleDetected   = axleDetected(sensor);
 
     if (isCurrentAxleDetected && isPreviousAxleDetected[sensor]) {
         if ((millis() - timeAxlePast[sensor]) < MAX_TIME_BETWEEN_AXLES_MS) {
@@ -112,7 +112,7 @@ bool vehicle_passed(uint8_t sensor) {
     return hasVehiclePassed;
 }
 
-bool axle_detected(uint8_t sensor) {
+bool axleDetected(uint8_t sensor) {
     bool isAxleDeteted = false;
 
     if (SENSOR_COUNTER == sensor) {
@@ -126,11 +126,11 @@ bool axle_detected(uint8_t sensor) {
     return isAxleDeteted;
 }
 
-void display_counter(uint8_t value) {
+void displayCounter(uint8_t value) {
     (void)carCountDisplay(value);   /* Call previously written function to display the amount of cars that have been passed */
 }
 
-void determine_and_show_speed(void) {
+void determineAndShowSpeed(void) {
     float32_t speed = 0.0f;
     static bool isSpeedBeingMeasured = false;
 
