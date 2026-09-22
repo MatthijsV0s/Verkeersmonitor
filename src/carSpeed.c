@@ -20,7 +20,7 @@ const uint8_t segments[10] = {  /* Binairy values follow this layout: 0b0GFEDCBA
 };
 
 volatile uint8_t    speedSegmentBuffer[4]   = {0u};
-bool                isDisplayClear          = false;
+volatile bool       isDisplayClear          = false;
 
 int32_t carSpeedInit(void) {
     int32_t error = SYSTEM_OK;

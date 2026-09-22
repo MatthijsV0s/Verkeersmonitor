@@ -48,15 +48,15 @@ void determineAndShowSpeed(void);
 void buttonPushCounterISR(void);
 void buttonPushSpeedISR(void);
 
-volatile uint8_t    carCounter                              = 0u;
 volatile uint32_t   lastTimeTeller1ISR                      = 0u;
 volatile uint32_t   lastTimeTeller2ISR                      = 0u;
 volatile bool       isButton1Down                           = false;
 volatile bool       isButton2Down                           = false;
 volatile bool       isFirstButtonPressedFlag                = false;
 volatile bool       isSecondButtonPressedFlag               = false;
-volatile uint32_t   timeAxlePast[NUMBER_OF_SENSORS]         = {0u};
-volatile uint32_t   timeStartMeasureSpeed                   = 0u;
+uint8_t             carCounter                              = 0u;
+uint32_t            timeAxlePast[NUMBER_OF_SENSORS]         = {0u};
+uint32_t            timeStartMeasureSpeed                   = 0u;
 bool                isCounterIncreased                      = false;
 
 int main(void) {
