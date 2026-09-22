@@ -103,7 +103,7 @@ int32_t displaySegments(uint8_t value, uint8_t port, uint8_t firstBit, uint8_t m
         output = segments[value];
     }
     output = (output << bitIndex(firstBit));
-    port *= 3u;
+    port *= GPIO_PORT_OFFSET_CORRECTION;
     copyOutput = (*(&PORTB + port)) & mask;
     (*(&PORTB + port)) = copyOutput | output;
 

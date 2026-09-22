@@ -8,7 +8,7 @@ int32_t displayBinairyShowValue(uint8_t value, uint8_t port, uint8_t firstBit, u
     uint8_t copyOutput = 0u;
 
     value = (value << bitIndex(firstBit));
-    port *= 3u;
+    port *= GPIO_PORT_OFFSET_CORRECTION;
     copyOutput = (*(&PORTB + port)) & mask;
     (*(&PORTB + port)) = copyOutput | value;
 
