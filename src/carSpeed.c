@@ -2,6 +2,8 @@
 #include "displayBinairy.h"
 #include "errors.h"
 
+#define MAX_DIGIT_VALUE     (0x03)
+
 static uint8_t bitIndex(uint8_t value);
 
 const uint8_t segments[10] = {  /* Binairy values follow this layout: 0b0GFEDCBA, with A-G representing the segments */
@@ -87,7 +89,7 @@ int32_t carSpeedShowSpeed(uint8_t numberPort, uint8_t digitPort, uint8_t numberF
         else {
             (void)gpioPinSetValue(OUTPUT_DP_LED_PORT, OUTPUT_DP_LED_BIT, LOW);
         }
-        digit = (digit + 1) & 0x03;
+        digit = (digit + 1) & MAX_DIGIT_VALUE;      /* Move to next digit (0 - 3), cannot get higher then MAX_DIGIT_VALUE */
     }
     return error;
 }
