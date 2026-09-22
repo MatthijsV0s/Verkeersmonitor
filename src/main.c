@@ -1,3 +1,12 @@
+/**
+ * Matthijs Vos
+ * s1200598
+ * Datapunt DP-MC1-6
+ * Dit project bevat de firmware voor een verkeersmonitor,
+ * deze monitor telt het aantal voertuigen dat passeert over de sensoren, 
+ * en meet de snelheid van het passerende voertuig.
+ * Copyright
+ */
 #include "gpio_lib.h"
 #include "usart.h"
 #include "errors.h"
