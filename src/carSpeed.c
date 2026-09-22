@@ -53,8 +53,10 @@ int32_t carSpeedSaveSpeed(float32_t speed) {
         isDisplayClear = true;
     }
     else {
+        /* speed is multiplied by 10, so it the digit after the ',' can be read */
         number = (uint16_t)(speed * 10.0f);
 
+        /* The digits of the number to show are saved in a buffer */
         speedSegmentBuffer[0] = (number)         % 10u;
         speedSegmentBuffer[1] = (number / 10u)   % 10u;
         speedSegmentBuffer[2] = (number / 100u)  % 10u;
@@ -97,6 +99,10 @@ int32_t carSpeedShowSpeed(uint8_t numberPort, uint8_t digitPort, uint8_t numberF
     return error;
 }
 
+/**
+ * @brief This function puts the Binairy number of 'value' in the output port
+ * without changing the bits that don't need to change.
+ */
 int32_t displaySegments(uint8_t value, uint8_t port, uint8_t firstBit, uint8_t mask) {
     int32_t error = SYSTEM_OK;
     uint8_t copyOutput = 0u;

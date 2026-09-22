@@ -3,6 +3,10 @@
 
 static uint8_t bitIndex(uint8_t value);
 
+/**
+ * @brief This function puts the Binairy number of 'value' in the output port
+ * without changing the bits that don't need to change.
+ */
 int32_t displayBinairyShowValue(uint8_t value, uint8_t port, uint8_t firstBit, uint8_t mask) {
     int32_t error = SYSTEM_OK;
     uint8_t copyOutput = 0u;
