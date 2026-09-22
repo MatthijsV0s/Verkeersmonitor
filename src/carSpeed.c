@@ -2,6 +2,8 @@
 #include "displayBinairy.h"
 #include "errors.h"
 
+#define MAX_DIGIT_VALUE     (0x03)
+
 static uint8_t bitIndex(uint8_t value);
 
 const uint8_t segments[10] = {  /* Binairy values follow this layout: 0b0GFEDCBA, with A-G representing the segments */
@@ -17,7 +19,8 @@ const uint8_t segments[10] = {  /* Binairy values follow this layout: 0b0GFEDCBA
     0b01101111                  /* 9 */
 };
 
-volatile uint8_t speedSegmentBuffer[4] = {0u};
+volatile uint8_t    speedSegmentBuffer[4]   = {0u};
+volatile bool       isDisplayClear          = false;
 
 int32_t carSpeedInit(void) {
     int32_t error = SYSTEM_OK;
@@ -33,8 +36,8 @@ int32_t carSpeedInit(void) {
     }
     speedSegmentBuffer[0] = 0u;
     speedSegmentBuffer[1] = 0u;
-    speedSegmentBuffer[2] = 0u;
-    speedSegmentBuffer[3] = 0u;
+    speedSegmentBuffer[2] = EMPTY_SEGMENT;
+    speedSegmentBuffer[3] = EMPTY_SEGMENT;
     return error;
 }
 
@@ -47,14 +50,26 @@ int32_t carSpeedSaveSpeed(float32_t speed) {
         speedSegmentBuffer[1] = EMPTY_SEGMENT;
         speedSegmentBuffer[2] = EMPTY_SEGMENT;
         speedSegmentBuffer[3] = EMPTY_SEGMENT;
+        isDisplayClear = true;
     }
     else {
+        /* speed is multiplied by 10, so it the digit after the ',' can be read */
         number = (uint16_t)(speed * 10.0f);
 
+        /* The digits of the number to show are saved in a buffer */
         speedSegmentBuffer[0] = (number)         % 10u;
         speedSegmentBuffer[1] = (number / 10u)   % 10u;
         speedSegmentBuffer[2] = (number / 100u)  % 10u;
         speedSegmentBuffer[3] = (number / 1000u) % 10u;
+        isDisplayClear = false;
+
+        if ((0u == speedSegmentBuffer[2]) && (0u == speedSegmentBuffer[3])) {
+            speedSegmentBuffer[2] = EMPTY_SEGMENT;
+            speedSegmentBuffer[3] = EMPTY_SEGMENT;
+        }
+        else if (0u == speedSegmentBuffer[3]) {
+            speedSegmentBuffer[3] = EMPTY_SEGMENT;
+        }
     }
     return error;
 }
@@ -73,17 +88,21 @@ int32_t carSpeedShowSpeed(uint8_t numberPort, uint8_t digitPort, uint8_t numberF
         error = ERROR;
     }
     else {
-        if (digit == 1) {
+        if ((digit == 1u) && !isDisplayClear) {
             (void)gpioPinSetValue(OUTPUT_DP_LED_PORT, OUTPUT_DP_LED_BIT, HIGH);
         }
         else {
             (void)gpioPinSetValue(OUTPUT_DP_LED_PORT, OUTPUT_DP_LED_BIT, LOW);
         }
-        digit = (digit + 1) & 0x03;
+        digit = (digit + 1) & MAX_DIGIT_VALUE;      /* Move to next digit (0 - 3), cannot get higher then MAX_DIGIT_VALUE */
     }
     return error;
 }
 
+/**
+ * @brief This function puts the Binairy number of 'value' in the output port
+ * without changing the bits that don't need to change.
+ */
 int32_t displaySegments(uint8_t value, uint8_t port, uint8_t firstBit, uint8_t mask) {
     int32_t error = SYSTEM_OK;
     uint8_t copyOutput = 0u;
@@ -93,7 +112,7 @@ int32_t displaySegments(uint8_t value, uint8_t port, uint8_t firstBit, uint8_t m
         output = segments[value];
     }
     output = (output << bitIndex(firstBit));
-    port *= 3u;
+    port *= GPIO_PORT_OFFSET_CORRECTION;
     copyOutput = (*(&PORTB + port)) & mask;
     (*(&PORTB + port)) = copyOutput | output;
 

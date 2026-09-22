@@ -10,18 +10,18 @@ void timerMillisInit(void) {
     TCCR0A = (1u << WGM01);
     TCCR0B = (1u << CS01) | (1u << CS00);
     OCR0A = 249u;
-
-    TIMSK0 |= 0x02;
+    /* Enable compare A interrupt */
+    TIMSK0 |= (1 << OCIE1A);
     sei();
 }
 
 void timerSpeedInit(void) {
-    /* Timer1: normal mode, clock /64 -> overflow every 262.144 ms at F_CPU = 16 MHz. */
+    /* Timer1: CTC, clock /64, compare 1041 -> 240 Hz (4.167 ms) at F_CPU = 16 MHz. */
     TCCR1A = 0u;
     TCCR1B = (1u << WGM12) | (1u << CS11) | (1u << CS10);
     OCR1A = 1041u;
-
-    TIMSK1 |= 0x02;
+    /* Enable compare A interrupt */
+    TIMSK1 |= (1 << OCIE1A);
     sei();
 }
 
