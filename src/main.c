@@ -159,6 +159,12 @@ static void determineAndShowSpeed(void) {
         timeStartMeasureSpeed = timeAxlePast[SENSOR_COUNTER];
         isCounterIncreased = false;
         isSpeedBeingMeasured = true;
+        gpioPinSetValue(OUTPUT_LED_ERROR_REGISTER, OUTPUT_LED_ERROR_BIT, LOW);
+    }
+
+    if (!isSpeedBeingMeasured && isSecondButtonPressedFlag) {
+        isSecondButtonPressedFlag = false;
+        gpioPinSetValue(OUTPUT_LED_ERROR_REGISTER, OUTPUT_LED_ERROR_BIT, HIGH);
     }
 
     if (vehiclePassed(SENSOR_SPEED) && isSpeedBeingMeasured) {
@@ -166,7 +172,6 @@ static void determineAndShowSpeed(void) {
         if (speed >= MAX_SPEED) {
             speed = MAX_SPEED;
         }
-        gpioPinSetValue(OUTPUT_LED_ERROR_REGISTER, OUTPUT_LED_ERROR_BIT, LOW);
         carSpeedSaveSpeed(speed);
         isSpeedBeingMeasured = false;
     }
